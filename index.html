@@ -137,14 +137,17 @@
             if (gameState === 'playing') {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+                // Desenha o jogador
                 ctx.fillStyle = player.color;
                 ctx.fillRect(player.x, player.y, playerSize, playerSize);
 
+                // Desenha os bots
                 bots.forEach(bot => {
                     ctx.fillStyle = bot.color;
                     ctx.fillRect(bot.x, bot.y, botSize, botSize);
                 });
 
+                // Desenha as tarefas
                 tasks.forEach(task => {
                     if (!task.completed) {
                         ctx.fillStyle = 'green';
@@ -152,6 +155,7 @@
                     }
                 });
 
+                // Atualiza a posição dos bots
                 bots.forEach(bot => {
                     if (bot.isImpostor) {
                         bot.x += (Math.random() - 0.5) * 2;
@@ -165,12 +169,14 @@
                     }
                 });
 
+                // Verifica se o jogador está em cima de uma tarefa
                 tasks.forEach(task => {
                     if (!task.completed && Math.abs(player.x - task.x) < taskCompletionRadius && Math.abs(player.y - task.y) < taskCompletionRadius) {
                         task.completed = true;
                     }
                 });
 
+                // Verifica condições de vitória ou derrota
                 if (bots.some(bot => bot.isImpostor && Math.abs(player.x - bot.x) < taskCompletionRadius && Math.abs(player.y - bot.y) < taskCompletionRadius)) {
                     gameState = 'end';
                     document.getElementById('status').textContent = 'Você encontrou o impostor! Fim de jogo.';
@@ -178,9 +184,11 @@
                     gameState = 'end';
                     document.getElementById('status').textContent = 'Todas as tarefas foram completadas! Fim de jogo.';
                 } else {
+                    // Move o jogador
                     player.x += moveX;
                     player.y += moveY;
 
+                    // Limita a movimentação do jogador aos limites do canvas
                     player.x = Math.max(0, Math.min(canvas.width - playerSize, player.x));
                     player.y = Math.max(0, Math.min(canvas.height - playerSize, player.y));
 
@@ -208,6 +216,12 @@
                 }
                 updateGame();
             }
+        }
+
+        // Função para parar o movimento do jogador
+        function stopMovement(event) {
+            moveX = 0;
+            moveY = 0;
         }
 
         // Configura o controle analógico para dispositivos móveis
@@ -243,49 +257,33 @@
                 analogStick.style.transform = 'translate(0, 0)';
                 document.removeEventListener('mousemove', moveAnalogStick);
                 document.removeEventListener('mouseup', stopAnalogControl);
+                document.removeEventListener('touchmove', moveAnalogStick);
+                document.removeEventListener('touchend', stopAnalogControl);
             }
 
             document.addEventListener('mousemove', moveAnalogStick);
             document.addEventListener('mouseup', stopAnalogControl);
+            document.addEventListener('touchmove', moveAnalogStick);
+            document.addEventListener('touchend', stopAnalogControl);
         }
 
-        document.addEventListener('mousedown', startAnalogControl);
-        document.addEventListener('touchstart', startAnalogControl);
-
-        document.getElementById('startGame').addEventListener('click', initGame);
-        document.addEventListener('keydown', handleMovement);
-        document.addEventListener('keyup', () => { moveX = 0; moveY = 0; });
-
-        // Adiciona suporte a teclas de direção para dispositivos móveis
-        document.addEventListener('touchmove', (event) => {
-            const touch = event.touches[0];
-            const x = touch.clientX - canvas.getBoundingClientRect().left;
-            const y = touch.clientY - canvas.getBoundingClientRect().top;
-
-            if (x < canvas.width / 2) {
-                moveX = (x / (canvas.width / 2) - 1) * playerSpeed;
-            } else {
-                moveX = (x - canvas.width / 2) / (canvas.width / 2) * playerSpeed;
-            }
-
-            if (y < canvas.height / 2) {
-                moveY = (y / (canvas.height / 2) - 1) * playerSpeed;
-            } else {
-                moveY = (y - canvas.height / 2) / (canvas.height / 2) * playerSpeed;
-            }
-
-            updateGame();
-        });
-
-        // Mostra o controle analógico em dispositivos móveis
         function checkIfMobile() {
             const isMobile = /Mobi|Android/i.test(navigator.userAgent);
             if (isMobile) {
                 analogControl.style.display = 'flex';
+                document.addEventListener('touchstart', startAnalogControl);
             } else {
                 analogControl.style.display = 'none';
+                document.removeEventListener('touchstart', startAnalogControl);
             }
         }
+
+        // Inicializa o jogo quando o botão "Iniciar Jogo" é clicado
+        document.getElementById('startGame').addEventListener('click', initGame);
+
+        // Adiciona o suporte a teclas de direção para dispositivos desktop
+        document.addEventListener('keydown', handleMovement);
+        document.addEventListener('keyup', stopMovement);
 
         // Verifica o dispositivo ao carregar e redimensionar a tela
         window.addEventListener('load', checkIfMobile);
