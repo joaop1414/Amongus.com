@@ -63,6 +63,12 @@
             height: 50px;
             background-color: rgba(255, 255, 255, 0.5);
             border-radius: 50%;
+            position: relative;
+        }
+
+        /* Ajustes para responsividade do controle analógico */
+        #analogControl.active #analogStick {
+            background-color: rgba(255, 255, 255, 0.7);
         }
     </style>
 </head>
@@ -83,7 +89,7 @@
         const playerSize = 30;
         const botSize = 30;
         const numBots = 3;
-        const playerSpeed = 5;
+        const playerSpeed = 2; // Reduzi a velocidade do jogador
         const taskSize = 20;
         const taskCompletionRadius = 25;
 
@@ -230,6 +236,8 @@
 
         function startAnalogControl(event) {
             analogControl.style.display = 'flex';
+            analogControl.classList.add('active');
+
             const rect = analogControl.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
@@ -239,26 +247,24 @@
                 const y = event.clientY - centerY;
                 const distance = Math.sqrt(x * x + y * y);
 
+                // Limita o movimento da alavanca do controle analógico
                 if (distance > 50) {
-                    moveX = (x / distance) * playerSpeed;
-                    moveY = (y / distance) * playerSpeed;
+                    const angle = Math.atan2(y, x);
+                    moveX = Math.cos(angle) * playerSpeed;
+                    moveY = Math.sin(angle) * playerSpeed;
                 } else {
                     moveX = (x / 50) * playerSpeed;
                     moveY = (y / 50) * playerSpeed;
                 }
 
-                analogStick.style.transform = `translate(${x}px, ${y}px)`;
-                updateGame();
-            }
+                analogStick.style.transform = `translate(${Math.min(50, Math.max(-50, x))}px, ${Math.min(50, Math.max(-50, y))}px)`;
+                updateGame();}
 
             function stopAnalogControl() {
+                analogControl.classList.remove('active');
+                analogStick.style.transform = `translate(0, 0)`;
                 moveX = 0;
                 moveY = 0;
-                analogStick.style.transform = 'translate(0, 0)';
-                document.removeEventListener('mousemove', moveAnalogStick);
-                document.removeEventListener('mouseup', stopAnalogControl);
-                document.removeEventListener('touchmove', moveAnalogStick);
-                document.removeEventListener('touchend', stopAnalogControl);
             }
 
             document.addEventListener('mousemove', moveAnalogStick);
@@ -267,6 +273,7 @@
             document.addEventListener('touchend', stopAnalogControl);
         }
 
+        // Verifica se o dispositivo é móvel e exibe o controle analógico se necessário
         function checkIfMobile() {
             const isMobile = /Mobi|Android/i.test(navigator.userAgent);
             if (isMobile) {
@@ -278,14 +285,10 @@
             }
         }
 
-        // Inicializa o jogo quando o botão "Iniciar Jogo" é clicado
+        // Inicializa o jogo e configura os eventos
         document.getElementById('startGame').addEventListener('click', initGame);
-
-        // Adiciona o suporte a teclas de direção para dispositivos desktop
         document.addEventListener('keydown', handleMovement);
         document.addEventListener('keyup', stopMovement);
-
-        // Verifica o dispositivo ao carregar e redimensionar a tela
         window.addEventListener('load', checkIfMobile);
         window.addEventListener('resize', checkIfMobile);
     </script>
