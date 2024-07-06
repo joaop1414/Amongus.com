@@ -1,49 +1,48 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Among Us Simulador</title>
+    <title>Jogos Simples do JP</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-        #gameCanvas { border: 1px solid #000; }
-        #controls, #controlsMobile { display: flex; justify-content: center; margin: 10px; }
-        #controlsMobile { display: none; }
-        .control-button { margin: 5px; }
-        #chat { width: 200px; height: 100px; overflow-y: auto; border: 1px solid #ddd; padding: 5px; }
-        #chatBox { margin-top: 10px; }
-        #chatInput { width: 100%; }
-        .character { border-radius: 50%; position: absolute; }
-        .dead { background-color: gray; }
-        #analogControl { width: 100px; height: 100px; background: #ddd; border-radius: 50%; position: absolute; bottom: 20px; left: 20px; }
-        #analogControl .stick { width: 50px; height: 50px; background: #bbb; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .task { width: 20px; height: 20px; background: green; border-radius: 50%; position: absolute; }
-        #visionLimit { position: absolute; border-radius: 50%; border: 1px dashed rgba(0,0,0,0.5); pointer-events: none; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #87CEEB;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 {
+            color: #FF4500;
+        }
+        .button {
+            display: block;
+            width: 200px;
+            padding: 15px 20px;
+            margin: 10px auto;
+            background-color: #FF4500;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .button:hover {
+            background-color: #FF6347;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="controls">
-        <button id="up">↑</button>
-        <button id="left">←</button>
-        <button id="down">↓</button>
-        <button id="right">→</button>
-    </div>
-    <div id="controlsMobile">
-        <div id="analogControl"><div class="stick"></div></div>
-        <button id="upMobile" class="control-button">↑</button>
-        <button id="leftMobile" class="control-button">←</button>
-        <button id="downMobile" class="control-button">↓</button>
-        <button id="rightMobile" class="control-button">→</button>
-    </div>
-    <button id="startGame">Iniciar Jogo</button>
-    <div id="status"></div>
-    <div id="chat">
-        <div id="chatBox"></div>
-        <input type="text" id="chatInput" placeholder="Digite sua mensagem...">
-    </div>
-    <div id="visionLimit"></div>
-    <script src="script.js"></script>
-<script src="js/game.js"></script>
+    <h1>Jogos Simples do JP</h1>
+    <p>Escolha um dos jogos abaixo para jogar:</p>
+
+    <!-- Adicione um botão para cada jogo HTML aqui -->
+    <a href="jogos/pule-o-obstaculo.html" class="button">Pule o Obstáculo</a>
+    <a href="jogos/dodge-the-objects.html" class="button">Dodge the Objects</a>
+    <a href="jogos/jogo-da-velha.html" class="button">Jogo da Velha</a>
+    <a href="jogos/jogo-da-memoria.html" class="button">Jogo da Memória</a>
+    <a href="jogos/corrida.html" class="button">Corrida dos Blocos</a>
 </body>
 </html>
