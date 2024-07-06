@@ -3,294 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Among Us Offline</title>
+    <title>Among Us Simulador</title>
     <style>
-        /* Estilos do jogo */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #282c34;
-            color: #61dafb;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        h1 {
-            margin-top: 20px;
-        }
-
-        #gameCanvas {
-            border: 2px solid #61dafb;
-            background-color: #444;
-        }
-
-        #gameInfo {
-            margin-top: 20px;
-        }
-
-        button {
-            background-color: #61dafb;
-            color: #282c34;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #4d9b9b;
-        }
-
-        /* Estilos do controle analógico */
-        #analogControl {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            width: 100px;
-            height: 100px;
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            display: none; /* Oculto por padrão */
-        }
-
-        #analogStick {
-            width: 50px;
-            height: 50px;
-            background-color: rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
-            position: relative;
-        }
-
-        /* Ajustes para responsividade do controle analógico */
-        #analogControl.active #analogStick {
-            background-color: rgba(255, 255, 255, 0.7);
-        }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        #gameCanvas { border: 1px solid #000; }
+        #controls, #controlsMobile { display: flex; justify-content: center; margin: 10px; }
+        #controlsMobile { display: none; }
+        .control-button { margin: 5px; }
+        #chat { width: 200px; height: 100px; overflow-y: auto; border: 1px solid #ddd; padding: 5px; }
+        #chatBox { margin-top: 10px; }
+        #chatInput { width: 100%; }
+        .character { border-radius: 50%; position: absolute; }
+        .dead { background-color: gray; }
+        #analogControl { width: 100px; height: 100px; background: #ddd; border-radius: 50%; position: absolute; bottom: 20px; left: 20px; }
+        #analogControl .stick { width: 50px; height: 50px; background: #bbb; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .task { width: 20px; height: 20px; background: green; border-radius: 50%; position: absolute; }
+        #visionLimit { position: absolute; border-radius: 50%; border: 1px dashed rgba(0,0,0,0.5); pointer-events: none; }
     </style>
 </head>
 <body>
-    <h1>Among Us Offline</h1>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="gameInfo">
-        <button id="startGame">Iniciar Jogo</button>
-        <p id="status">Clique em "Iniciar Jogo" para começar</p>
+    <div id="controls">
+        <button id="up">↑</button>
+        <button id="left">←</button>
+        <button id="down">↓</button>
+        <button id="right">→</button>
     </div>
-    <div id="analogControl">
-        <div id="analogStick"></div>
+    <div id="controlsMobile">
+        <div id="analogControl"><div class="stick"></div></div>
+        <button id="upMobile" class="control-button">↑</button>
+        <button id="leftMobile" class="control-button">←</button>
+        <button id="downMobile" class="control-button">↓</button>
+        <button id="rightMobile" class="control-button">→</button>
     </div>
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-
-        const playerSize = 30;
-        const botSize = 30;
-        const numBots = 3;
-        const playerSpeed = 2; // Reduzi a velocidade do jogador
-        const taskSize = 20;
-        const taskCompletionRadius = 25;
-
-        let player = null;
-        let bots = [];
-        let tasks = [];
-        let impostor = null;
-        let gameState = 'waiting';
-        let moveX = 0;
-        let moveY = 0;
-
-        // Função para criar um novo personagem
-        function createCharacter(x, y, color, isImpostor = false) {
-            return { x, y, color, isImpostor };
-        }
-
-        // Função para criar uma nova tarefa
-        function createTask(x, y) {
-            return { x, y, completed: false };
-        }
-
-        // Inicializa o jogo
-        function initGame() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            player = createCharacter(100, 100, 'red');
-
-            bots = [];
-            for (let i = 0; i < numBots; i++) {
-                const x = Math.random() * (canvas.width - botSize);
-                const y = Math.random() * (canvas.height - botSize);
-                const color = i === 0 ? 'black' : 'blue';
-                bots.push(createCharacter(x, y, color, i === 0));
-            }
-
-            impostor = bots.find(bot => bot.isImpostor);
-
-            tasks = [
-                createTask(200, 200),
-                createTask(400, 100),
-                createTask(600, 300),
-            ];
-
-            gameState = 'playing';
-            document.getElementById('status').textContent = 'Encontre o impostor e complete as tarefas!';
-            updateGame();
-        }
-
-        // Atualiza o estado do jogo
-        function updateGame() {
-            if (gameState === 'playing') {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                // Desenha o jogador
-                ctx.fillStyle = player.color;
-                ctx.fillRect(player.x, player.y, playerSize, playerSize);
-
-                // Desenha os bots
-                bots.forEach(bot => {
-                    ctx.fillStyle = bot.color;
-                    ctx.fillRect(bot.x, bot.y, botSize, botSize);
-                });
-
-                // Desenha as tarefas
-                tasks.forEach(task => {
-                    if (!task.completed) {
-                        ctx.fillStyle = 'green';
-                        ctx.fillRect(task.x, task.y, taskSize, taskSize);
-                    }
-                });
-
-                // Atualiza a posição dos bots
-                bots.forEach(bot => {
-                    if (bot.isImpostor) {
-                        bot.x += (Math.random() - 0.5) * 2;
-                        bot.y += (Math.random() - 0.5) * 2;
-                    } else {
-                        const targetTask = tasks.find(t => !t.completed && Math.abs(t.x - bot.x) < 50 && Math.abs(t.y - bot.y) < 50);
-                        if (targetTask) {
-                            bot.x += (targetTask.x - bot.x) * 0.05;
-                            bot.y += (targetTask.y - bot.y) * 0.05;
-                        }
-                    }
-                });
-
-                // Verifica se o jogador está em cima de uma tarefa
-                tasks.forEach(task => {
-                    if (!task.completed && Math.abs(player.x - task.x) < taskCompletionRadius && Math.abs(player.y - task.y) < taskCompletionRadius) {
-                        task.completed = true;
-                    }
-                });
-
-                // Verifica condições de vitória ou derrota
-                if (bots.some(bot => bot.isImpostor && Math.abs(player.x - bot.x) < taskCompletionRadius && Math.abs(player.y - bot.y) < taskCompletionRadius)) {
-                    gameState = 'end';
-                    document.getElementById('status').textContent = 'Você encontrou o impostor! Fim de jogo.';
-                } else if (tasks.every(task => task.completed)) {
-                    gameState = 'end';
-                    document.getElementById('status').textContent = 'Todas as tarefas foram completadas! Fim de jogo.';
-                } else {
-                    // Move o jogador
-                    player.x += moveX;
-                    player.y += moveY;
-
-                    // Limita a movimentação do jogador aos limites do canvas
-                    player.x = Math.max(0, Math.min(canvas.width - playerSize, player.x));
-                    player.y = Math.max(0, Math.min(canvas.height - playerSize, player.y));
-
-                    setTimeout(updateGame, 100);
-                }
-            }
-        }
-
-        // Função para mover o jogador
-        function handleMovement(event) {
-            if (gameState === 'playing') {
-                switch (event.key) {
-                    case 'ArrowUp':
-                        moveY = -playerSpeed;
-                        break;
-                    case 'ArrowDown':
-                        moveY = playerSpeed;
-                        break;
-                    case 'ArrowLeft':
-                        moveX = -playerSpeed;
-                        break;
-                    case 'ArrowRight':
-                        moveX = playerSpeed;
-                        break;
-                }
-                updateGame();
-            }
-        }
-
-        // Função para parar o movimento do jogador
-        function stopMovement(event) {
-            moveX = 0;
-            moveY = 0;
-        }
-
-        // Configura o controle analógico para dispositivos móveis
-        const analogControl = document.getElementById('analogControl');
-        const analogStick = document.getElementById('analogStick');
-
-        function startAnalogControl(event) {
-            analogControl.style.display = 'flex';
-            analogControl.classList.add('active');
-
-            const rect = analogControl.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-
-            function moveAnalogStick(event) {
-                const x = event.clientX - centerX;
-                const y = event.clientY - centerY;
-                const distance = Math.sqrt(x * x + y * y);
-
-                // Limita o movimento da alavanca do controle analógico
-                if (distance > 50) {
-                    const angle = Math.atan2(y, x);
-                    moveX = Math.cos(angle) * playerSpeed;
-                    moveY = Math.sin(angle) * playerSpeed;
-                } else {
-                    moveX = (x / 50) * playerSpeed;
-                    moveY = (y / 50) * playerSpeed;
-                }
-
-                analogStick.style.transform = `translate(${Math.min(50, Math.max(-50, x))}px, ${Math.min(50, Math.max(-50, y))}px)`;
-                updateGame();}
-
-            function stopAnalogControl() {
-                analogControl.classList.remove('active');
-                analogStick.style.transform = `translate(0, 0)`;
-                moveX = 0;
-                moveY = 0;
-            }
-
-            document.addEventListener('mousemove', moveAnalogStick);
-            document.addEventListener('mouseup', stopAnalogControl);
-            document.addEventListener('touchmove', moveAnalogStick);
-            document.addEventListener('touchend', stopAnalogControl);
-        }
-
-        // Verifica se o dispositivo é móvel e exibe o controle analógico se necessário
-        function checkIfMobile() {
-            const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-            if (isMobile) {
-                analogControl.style.display = 'flex';
-                document.addEventListener('touchstart', startAnalogControl);
-            } else {
-                analogControl.style.display = 'none';
-                document.removeEventListener('touchstart', startAnalogControl);
-            }
-        }
-
-        // Inicializa o jogo e configura os eventos
-        document.getElementById('startGame').addEventListener('click', initGame);
-        document.addEventListener('keydown', handleMovement);
-        document.addEventListener('keyup', stopMovement);
-        window.addEventListener('load', checkIfMobile);
-        window.addEventListener('resize', checkIfMobile);
-    </script>
+    <button id="startGame">Iniciar Jogo</button>
+    <div id="status"></div>
+    <div id="chat">
+        <div id="chatBox"></div>
+        <input type="text" id="chatInput" placeholder="Digite sua mensagem...">
+    </div>
+    <div id="visionLimit"></div>
+    <script src="script.js"></script>
 </body>
 </html>
