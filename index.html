@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Among Us Offline</title>
     <style>
+        /* Estilos do jogo */
         body {
             font-family: Arial, sans-serif;
             background-color: #282c34;
@@ -41,6 +42,28 @@
         button:hover {
             background-color: #4d9b9b;
         }
+
+        /* Estilos do controle analógico */
+        #analogControl {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 100px;
+            height: 100px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            display: none; /* Oculto por padrão */
+        }
+
+        #analogStick {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body>
@@ -50,11 +73,13 @@
         <button id="startGame">Iniciar Jogo</button>
         <p id="status">Clique em "Iniciar Jogo" para começar</p>
     </div>
+    <div id="analogControl">
+        <div id="analogStick"></div>
+    </div>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Configurações do jogo
         const playerSize = 30;
         const botSize = 30;
         const numBots = 3;
@@ -62,14 +87,15 @@
         const taskSize = 20;
         const taskCompletionRadius = 25;
 
-        // Estado do jogo
         let player = null;
         let bots = [];
         let tasks = [];
         let impostor = null;
-        let gameState = 'waiting'; // Pode ser 'playing', 'voting', ou 'end'
+        let gameState = 'waiting';
+        let moveX = 0;
+        let moveY = 0;
 
-        // Função para criar um novo jogador ou bot
+        // Função para criar um novo personagem
         function createCharacter(x, y, color, isImpostor = false) {
             return { x, y, color, isImpostor };
         }
@@ -83,49 +109,42 @@
         function initGame() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Cria o jogador
             player = createCharacter(100, 100, 'red');
 
-            // Adiciona alguns bots NPC
             bots = [];
             for (let i = 0; i < numBots; i++) {
                 const x = Math.random() * (canvas.width - botSize);
                 const y = Math.random() * (canvas.height - botSize);
-                const color = i === 0 ? 'black' : 'blue';  // O primeiro bot é o impostor
+                const color = i === 0 ? 'black' : 'blue';
                 bots.push(createCharacter(x, y, color, i === 0));
             }
 
             impostor = bots.find(bot => bot.isImpostor);
 
-            // Adiciona tarefas ao jogo
             tasks = [
                 createTask(200, 200),
                 createTask(400, 100),
                 createTask(600, 300),
             ];
 
-            // Define o estado do jogo
             gameState = 'playing';
             document.getElementById('status').textContent = 'Encontre o impostor e complete as tarefas!';
             updateGame();
         }
 
-        // Atualiza o jogo a cada frame
+        // Atualiza o estado do jogo
         function updateGame() {
             if (gameState === 'playing') {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                // Desenha o jogador
                 ctx.fillStyle = player.color;
                 ctx.fillRect(player.x, player.y, playerSize, playerSize);
 
-                // Desenha os bots
                 bots.forEach(bot => {
                     ctx.fillStyle = bot.color;
                     ctx.fillRect(bot.x, bot.y, botSize, botSize);
                 });
 
-                // Desenha as tarefas
                 tasks.forEach(task => {
                     if (!task.completed) {
                         ctx.fillStyle = 'green';
@@ -133,30 +152,25 @@
                     }
                 });
 
-                // Atualiza o comportamento dos bots
                 bots.forEach(bot => {
                     if (bot.isImpostor) {
-                        // Comportamento do impostor
-                        bot.x += (Math.random() - 0.5) * 2;  // Movimento aleatório
-                        bot.y += (Math.random() - 0.5) * 2;  // Movimento aleatório
+                        bot.x += (Math.random() - 0.5) * 2;
+                        bot.y += (Math.random() - 0.5) * 2;
                     } else {
-                        // Comportamento dos bots normais
                         const targetTask = tasks.find(t => !t.completed && Math.abs(t.x - bot.x) < 50 && Math.abs(t.y - bot.y) < 50);
                         if (targetTask) {
-                            bot.x += (targetTask.x - bot.x) * 0.05;  // Movimento em direção à tarefa
-                            bot.y += (targetTask.y - bot.y) * 0.05;  // Movimento em direção à tarefa
+                            bot.x += (targetTask.x - bot.x) * 0.05;
+                            bot.y += (targetTask.y - bot.y) * 0.05;
                         }
                     }
                 });
 
-                // Verifica se o jogador completou alguma tarefa
                 tasks.forEach(task => {
                     if (!task.completed && Math.abs(player.x - task.x) < taskCompletionRadius && Math.abs(player.y - task.y) < taskCompletionRadius) {
                         task.completed = true;
                     }
                 });
 
-                // Verifica se o jogador encontrou o impostor
                 if (bots.some(bot => bot.isImpostor && Math.abs(player.x - bot.x) < taskCompletionRadius && Math.abs(player.y - bot.y) < taskCompletionRadius)) {
                     gameState = 'end';
                     document.getElementById('status').textContent = 'Você encontrou o impostor! Fim de jogo.';
@@ -164,38 +178,118 @@
                     gameState = 'end';
                     document.getElementById('status').textContent = 'Todas as tarefas foram completadas! Fim de jogo.';
                 } else {
-                    // Atualiza o jogo a cada 100ms
+                    player.x += moveX;
+                    player.y += moveY;
+
+                    player.x = Math.max(0, Math.min(canvas.width - playerSize, player.x));
+                    player.y = Math.max(0, Math.min(canvas.height - playerSize, player.y));
+
                     setTimeout(updateGame, 100);
                 }
             }
         }
 
-        // Controla o movimento do jogador
+        // Função para mover o jogador
         function handleMovement(event) {
             if (gameState === 'playing') {
                 switch (event.key) {
                     case 'ArrowUp':
-                        player.y = Math.max(0, player.y - playerSpeed);
+                        moveY = -playerSpeed;
                         break;
                     case 'ArrowDown':
-                        player.y = Math.min(canvas.height - playerSize, player.y + playerSpeed);
+                        moveY = playerSpeed;
                         break;
                     case 'ArrowLeft':
-                        player.x = Math.max(0, player.x - playerSpeed);
+                        moveX = -playerSpeed;
                         break;
                     case 'ArrowRight':
-                        player.x = Math.min(canvas.width - playerSize, player.x + playerSpeed);
+                        moveX = playerSpeed;
                         break;
                 }
                 updateGame();
             }
         }
 
-        // Inicializa o jogo ao clicar no botão "Iniciar Jogo"
-        document.getElementById('startGame').addEventListener('click', initGame);
+        // Configura o controle analógico para dispositivos móveis
+        const analogControl = document.getElementById('analogControl');
+        const analogStick = document.getElementById('analogStick');
 
-        // Adiciona o evento de teclado para movimentar o jogador
+        function startAnalogControl(event) {
+            analogControl.style.display = 'flex';
+            const rect = analogControl.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            function moveAnalogStick(event) {
+                const x = event.clientX - centerX;
+                const y = event.clientY - centerY;
+                const distance = Math.sqrt(x * x + y * y);
+
+                if (distance > 50) {
+                    moveX = (x / distance) * playerSpeed;
+                    moveY = (y / distance) * playerSpeed;
+                } else {
+                    moveX = (x / 50) * playerSpeed;
+                    moveY = (y / 50) * playerSpeed;
+                }
+
+                analogStick.style.transform = `translate(${x}px, ${y}px)`;
+                updateGame();
+            }
+
+            function stopAnalogControl() {
+                moveX = 0;
+                moveY = 0;
+                analogStick.style.transform = 'translate(0, 0)';
+                document.removeEventListener('mousemove', moveAnalogStick);
+                document.removeEventListener('mouseup', stopAnalogControl);
+            }
+
+            document.addEventListener('mousemove', moveAnalogStick);
+            document.addEventListener('mouseup', stopAnalogControl);
+        }
+
+        document.addEventListener('mousedown', startAnalogControl);
+        document.addEventListener('touchstart', startAnalogControl);
+
+        document.getElementById('startGame').addEventListener('click', initGame);
         document.addEventListener('keydown', handleMovement);
+        document.addEventListener('keyup', () => { moveX = 0; moveY = 0; });
+
+        // Adiciona suporte a teclas de direção para dispositivos móveis
+        document.addEventListener('touchmove', (event) => {
+            const touch = event.touches[0];
+            const x = touch.clientX - canvas.getBoundingClientRect().left;
+            const y = touch.clientY - canvas.getBoundingClientRect().top;
+
+            if (x < canvas.width / 2) {
+                moveX = (x / (canvas.width / 2) - 1) * playerSpeed;
+            } else {
+                moveX = (x - canvas.width / 2) / (canvas.width / 2) * playerSpeed;
+            }
+
+            if (y < canvas.height / 2) {
+                moveY = (y / (canvas.height / 2) - 1) * playerSpeed;
+            } else {
+                moveY = (y - canvas.height / 2) / (canvas.height / 2) * playerSpeed;
+            }
+
+            updateGame();
+        });
+
+        // Mostra o controle analógico em dispositivos móveis
+        function checkIfMobile() {
+            const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+                analogControl.style.display = 'flex';
+            } else {
+                analogControl.style.display = 'none';
+            }
+        }
+
+        // Verifica o dispositivo ao carregar e redimensionar a tela
+        window.addEventListener('load', checkIfMobile);
+        window.addEventListener('resize', checkIfMobile);
     </script>
 </body>
 </html>
